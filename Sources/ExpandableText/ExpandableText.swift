@@ -34,7 +34,7 @@ public struct ExpandableText: View {
     @State private var truncatedSize: CGSize = .zero
     @State private var moreTextSize: CGSize = .zero
     
-    private let text: String
+    private let text: NSAttributedString
     internal var font: Font = .body
     internal var color: Color = .primary
     internal var lineLimit: Int = 3
@@ -50,8 +50,12 @@ public struct ExpandableText: View {
      - Parameter text: The initial text string to display in the `ExpandableText` view.
      - Returns: A new `ExpandableText` instance with the specified text string and trimming applied.
      */
+    public init(_ text: NSAttributedString) {
+        self.text = text
+    }
+    
     public init(_ text: String) {
-        self.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.text = NSAttributedString(string: text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
     
     public var body: some View {
@@ -98,12 +102,24 @@ public struct ExpandableText: View {
             }))
     }
     
-    private var content: some View {
-        Text(.init(
-            trimMultipleNewlinesWhenTruncated
+    private var textView: some View {
+        if #available(iOS 15, *) {
+            Text(AttributedString(
+                trimMultipleNewlinesWhenTruncated
                 ? (shouldShowMoreButton ? textTrimmingDoubleNewlines : text)
                 : text
-        ))
+            ))
+        } else {
+            Text(
+                trimMultipleNewlinesWhenTruncated
+                ? (shouldShowMoreButton ? textTrimmingDoubleNewlines.string : text.string)
+                : text.string
+            )
+        }
+    }
+    
+    private var content: some View {
+        textView
         .font(font)
         .foregroundColor(color)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -113,7 +129,7 @@ public struct ExpandableText: View {
         !isExpanded && isTruncated
     }
     
-    private var textTrimmingDoubleNewlines: String {
-        text.replacingOccurrences(of: #"\n\s*\n"#, with: "\n", options: .regularExpression)
+    private var textTrimmingDoubleNewlines: NSAttributedString {
+        text//.replacingOccurrences(of: #"\n\s*\n"#, with: "\n", options: .regularExpression)
     }
 }
